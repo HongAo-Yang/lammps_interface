@@ -24,6 +24,7 @@ import networkx as nx
 import operator
 import time
 from time import perf_counter as clock
+from tqdm import tqdm
 
 try:
     import networkx as nx
@@ -1889,15 +1890,18 @@ def from_CIF(cifname):
     - assumes that the appropriate keys are in the cifobj (no error checking)
 
     """
-
+    print("正在读取 CIF 文件...")
     cifobj = CIF()
     cifobj.read(cifname)
 
+    print("正在解析 CIF 数据...")
     data = cifobj._data
     # obtain atoms and cell
     cell = Cell()
     # add data to molecular graph (to be parsed later..)
     mg = MolecularGraph(name=clean(cifname))
+    
+    print("正在设置晶胞参数...")
     cellparams = [
         float(del_parenth(i))
         for i in [
@@ -1911,25 +1915,29 @@ def from_CIF(cifname):
     ]
     cell.set_params(cellparams)
 
+    print("正在添加原子节点...")
     # add atom nodes
     id = cifobj.block_order.index("atoms")
     atheads = cifobj._headings[id]
     for atom_data in zip(*[data[i] for i in atheads]):
         kwargs = {a: j.strip() for a, j in zip(atheads, atom_data)}
         mg.add_atomic_node(**kwargs)
+        
+    print("正在添加化学键...")
     # add bond edges, if they exist
     try:
         id = cifobj.block_order.index("bonds")
         bondheads = cifobj._headings[id]
-        for bond_data in zip(*[data[i] for i in bondheads]):
+        bond_data_list = list(zip(*[data[i] for i in bondheads]))
+        for bond_data in tqdm(bond_data_list, desc="添加化学键"):
             kwargs = {a: j.strip() for a, j in zip(bondheads, bond_data)}
             mg.add_bond_edge(**kwargs)
     except:
         # catch no bonds
-        print("No bonds reported in cif file - computing bonding..")
+        print("CIF 文件中未找到化学键信息 - 正在计算化学键...")
     mg.store_original_size()
     mg.cell = cell
-    print("totatomlen =", len(mg._node))
+    print("总原子数:", len(mg._node))
     return cell, mg
 
 
