@@ -868,7 +868,7 @@ class MolecularGraph(nx.Graph):
         while double_check:
             n = double_check.pop()
             # rewind this atom to a 'terminal' connected atom
-            for i in self.iterate_bonds_to_end(n, start_node=n):
+            for i in self.iterate_bonds_to_end(start_node=n):
                 start = i
                 try:
                     idn = double_check.index(i)
